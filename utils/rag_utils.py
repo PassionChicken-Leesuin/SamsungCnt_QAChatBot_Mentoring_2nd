@@ -480,12 +480,16 @@ def create_rag_chain(
     llm_model_name: str = "gpt-4o-mini",
 ):
     """
-    원래 create_rag_chain 그대로 옮기되,
-    model 이름/프롬프트 경로를 인자로 받을 수 있게 해둠.
+    RAG 체인 생성 함수.
+
+    - 외부 입력: {"question": str, "chat_history": str}
+    - rag_prompt(input_variables): ["context", "question", "chat_history"]
+      (지금 네가 제공한 history 프롬프트 형태)
     """
     rag_prompt = load_prompt(rag_prompt_path, encoding="utf-8")
     llm = ChatOpenAI(model=llm_model_name, temperature=0)
 
+    # ⬇ 검색용 질문 재작성 프롬프트 (여기서는 history 라는 이름을 내부용으로만 사용)
     condense_prompt = ChatPromptTemplate.from_template(
         """
         너는 검색용 질문을 재작성하는 보조 도우미이다.
@@ -509,9 +513,11 @@ def create_rag_chain(
     )
     condense_chain = condense_prompt | llm | StrOutputParser()
 
+    # 🔹 inputs: {"question": ..., "chat_history": ...}
     def retrieve_with_dual_search(inputs):
         query = inputs["question"]
-        history = inputs.get("history", "")
+        # ✅ 외부에서 들어오는 히스토리 키 이름은 chat_history
+        history = inputs.get("chat_history", "")
 
         metadata_filter = build_metadata_filter(query)
 
@@ -525,8 +531,10 @@ def create_rag_chain(
             },
         )
 
+        # 1) 원래 질문으로 검색
         docs_original = retriever.invoke(query)
 
+        # 2) 대화 이력이 있으면, 재작성된 질문으로 한 번 더 검색
         docs_contextual = []
         if history.strip():
             rewritten = condense_chain.invoke(
@@ -538,6 +546,7 @@ def create_rag_chain(
                 except Exception:
                     docs_contextual = []
 
+        # 3) 두 결과를 합치고, 내용 중복 제거
         seen = set()
         final_docs = []
         for d in docs_original + docs_contextual:
@@ -546,14 +555,17 @@ def create_rag_chain(
                 seen.add(content)
                 final_docs.append(d)
 
+        # 프롬프트에 들어갈 context 문자열로 변환
         return format_docs(final_docs)
 
+    # 🔹 rag_prompt 가 기대하는 키:
+    #    ["context", "question", "chat_history"]
     chain = (
         RunnableMap(
             {
                 "context": RunnableLambda(retrieve_with_dual_search),
                 "question": RunnableLambda(lambda x: x["question"]),
-                "history": RunnableLambda(lambda x: x["history"]),
+                "chat_history": RunnableLambda(lambda x: x.get("chat_history", "")),
             }
         )
         | rag_prompt
