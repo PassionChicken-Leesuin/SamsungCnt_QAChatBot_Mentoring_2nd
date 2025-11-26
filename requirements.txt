@@ -1,0 +1,17 @@
+streamlit
+pandas
+python-dotenv
+requests
+markdown
+html5lib
+lxml
+
+
+langchain
+langchain-core
+langchain-community
+langchain-openai
+faiss-cpu
+
+xmltodict
+python-dateutil
