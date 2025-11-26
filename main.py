@@ -940,13 +940,14 @@ if user_input:
         else:
             rag_chain = create_rag_chain(
                 vectorstore=vectorstore,
-                rag_prompt_path="prompts/first.yaml",
+                rag_prompt_path="prompts/first.yaml",  # ✅ 여기 프롬프트 파일이 {chat_history}를 써야 함
                 llm_model_name=model_name,
             )
+            # ✅ 히스토리를 chat_history 키로 넘김
             for token in rag_chain.stream(
                 {
                     "question": user_input,
-                    "history": get_history_text(),
+                    "chat_history": get_history_text(),
                 }
             ):
                 ai_answer += token
