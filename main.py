@@ -351,7 +351,7 @@ st.sidebar.markdown(
 
 menu = st.sidebar.radio(
     "모드 선택",
-    ["안전뉴스 검색/요약 Mate", "일상정보 Mate", "안전사고 검색 Mate(RAG)"],
+    ["안전뉴스 검색/요약 Mate","안전사고 검색 Mate(RAG)","일상정보 Mate"],
     index=0,
 )
 
@@ -1056,3 +1056,4 @@ if user_input:
 
     # 3) 대화 기록 저장
     add_message("assistant", ai_answer)
+
