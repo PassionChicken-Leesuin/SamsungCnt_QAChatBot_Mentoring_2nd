@@ -280,7 +280,7 @@ with st.sidebar:
     st.markdown(
         """
         <div class="sidebar-title-card" style="
-            background: linear-gradient(135deg, #E8F1FF 0%, #F7FAFF 100%;
+            background: linear-gradient(135deg, #E8F1FF 0%, #F7FAFF 100%);
             padding: 18px 14px;
             border-radius: 16px;
             border: 1px solid #D4E3FF;
@@ -308,6 +308,7 @@ with st.sidebar:
         """,
         unsafe_allow_html=True,
     )
+
 
 # ======================================================
 # 1. 세션 초기화 (모드별로 별도 저장)
@@ -940,14 +941,16 @@ if user_input:
         else:
             rag_chain = create_rag_chain(
                 vectorstore=vectorstore,
-                rag_prompt_path="prompts/first.yaml",  # ✅ 여기 프롬프트 파일이 {chat_history}를 써야 함
+                rag_prompt_path="prompts/first.yaml",
                 llm_model_name=model_name,
             )
-            # ✅ 히스토리를 chat_history 키로 넘김
+
+            chat_history_text = get_history_text(max_turns=5)
+
             for token in rag_chain.stream(
                 {
                     "question": user_input,
-                    "chat_history": get_history_text(),
+                    "chat_history": chat_history_text,  # ✅ 키 이름 통일
                 }
             ):
                 ai_answer += token
